@@ -14,16 +14,20 @@ router.get('/', async (req: Request, res: Response) => {
   try {
     const { category, status } = req.query;
 
-    // TODO: 实现文档列表查询
-    // const docs = await documentService.list({ category, status });
+    // 调用 Knowledge Service
+    const knowledgeService = (await import('../services/knowledge.service')).knowledgeService;
+    
+    const documents = await knowledgeService.list(
+      category as string,
+      status ? Number(status) : undefined
+    );
 
     res.json({
       success: true,
-      data: {
-        documents: []
-      }
+      data: { documents }
     });
   } catch (error) {
+    console.error('Knowledge error:', error);
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error'

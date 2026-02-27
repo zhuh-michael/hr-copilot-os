@@ -12,23 +12,33 @@ const router = Router();
  */
 router.get('/', async (req: Request, res: Response) => {
   try {
-    const { userId, startDate, endDate, page = 1, limit = 20 } = req.query;
+    const { userId, startDate, endDate, intent, page = '1', limit = '20' } = req.query;
 
-    // TODO: 实现日志查询
-    // const logs = await logService.query({ userId, startDate, endDate, page, limit });
+    // 调用 Log Service
+    const logService = (await import('../services/log.service')).logService;
+    
+    const result = await logService.query({
+      userId: userId as string,
+      startDate: startDate as string,
+      endDate: endDate as string,
+      intent: intent as string,
+      page: Number(page),
+      limit: Number(limit)
+    });
 
     res.json({
       success: true,
       data: {
-        logs: [],
+        logs: result.logs,
         pagination: {
           page: Number(page),
           limit: Number(limit),
-          total: 0
+          total: result.total
         }
       }
     });
   } catch (error) {
+    console.error('Logs error:', error);
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error'

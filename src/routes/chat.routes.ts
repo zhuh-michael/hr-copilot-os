@@ -14,18 +14,30 @@ router.post('/', async (req: Request, res: Response) => {
   try {
     const { message, sessionId, userId } = req.body;
 
-    // TODO: 实现 QA Service
-    // const answer = await qaService.ask({ message, sessionId, userId });
+    if (!message || !sessionId) {
+      return res.status(400).json({
+        success: false,
+        error: 'message 和 sessionId 是必填参数'
+      });
+    }
+
+    // 调用 QA Service
+    const qaService = (await import('../services/qa.service')).qaService;
+    
+    const result = await qaService.ask({
+      id: uuidv4(),
+      userId: userId || 'anonymous',
+      sessionId,
+      content: message,
+      createdAt: new Date()
+    });
 
     res.json({
       success: true,
-      data: {
-        answer: '这是 AI 回答（待实现）',
-        sources: [],
-        confidence: 0.95
-      }
+      data: result
     });
   } catch (error) {
+    console.error('Chat error:', error);
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error'
@@ -39,16 +51,25 @@ router.post('/', async (req: Request, res: Response) => {
  */
 router.post('/feedback', async (req: Request, res: Response) => {
   try {
-    const { answerId, isHelpful, comment } = req.body;
+    const { logId, isHelpful, comment } = req.body;
 
-    // TODO: 实现反馈提交
-    // await feedbackService.submit({ answerId, isHelpful, comment });
+    if (!logId || isHelpful === undefined) {
+      return res.status(400).json({
+        success: false,
+        error: 'logId 和 isHelpful 是必填参数'
+      });
+    }
+
+    // 调用 QA Service
+    const qaService = (await import('../services/qa.service')).qaService;
+    await qaService.submitFeedback(logId, isHelpful, comment);
 
     res.json({
       success: true,
       message: '反馈已提交'
     });
   } catch (error) {
+    console.error('Feedback error:', error);
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error'
