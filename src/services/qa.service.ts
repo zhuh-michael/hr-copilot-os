@@ -6,6 +6,7 @@
 
 import db from '../models/database';
 import { v4 as uuidv4 } from 'uuid';
+import { Database } from 'sqlite3';
 
 export interface Question {
   id: string;
@@ -115,35 +116,47 @@ class QAService {
    * 保存问答日志
    */
   private async saveLog(question: Question, result: QAResult): Promise<void> {
-    const stmt = db.prepare(`
-      INSERT INTO qa_logs (conversation_id, question, answer, intent, confidence, sources, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `);
-
-    stmt.run(
-      question.sessionId,
-      question.content,
-      result.answer,
-      result.intent,
-      result.confidence,
-      JSON.stringify(result.sources),
-      new Date().toISOString()
-    );
-
-    console.log('✅ 问答日志已保存');
+    return new Promise((resolve, reject) => {
+      db.run(
+        `INSERT INTO qa_logs (conversation_id, question, answer, intent, confidence, sources, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [
+          question.sessionId,
+          question.content,
+          result.answer,
+          result.intent,
+          result.confidence,
+          JSON.stringify(result.sources),
+          new Date().toISOString()
+        ],
+        (err) => {
+          if (err) reject(err);
+          else {
+            console.log('✅ 问答日志已保存');
+            resolve();
+          }
+        }
+      );
+    });
   }
 
   /**
    * 提交反馈
    */
   async submitFeedback(logId: number, isHelpful: boolean, comment?: string): Promise<void> {
-    const stmt = db.prepare(`
-      UPDATE qa_logs SET feedback = ? WHERE id = ?
-    `);
-
-    stmt.run(isHelpful ? 1 : 0, logId);
-
-    console.log(`✅ 反馈已提交：日志${logId} - ${isHelpful ? '有用' : '无用'}`);
+    return new Promise((resolve, reject) => {
+      db.run(
+        'UPDATE qa_logs SET feedback = ? WHERE id = ?',
+        [isHelpful ? 1 : 0, logId],
+        (err) => {
+          if (err) reject(err);
+          else {
+            console.log(`✅ 反馈已提交：日志${logId} - ${isHelpful ? '有用' : '无用'}`);
+            resolve();
+          }
+        }
+      );
+    });
   }
 }
 

@@ -5,6 +5,7 @@
  */
 
 import db from '../models/database';
+import sqlite3 from 'sqlite3';
 
 export interface QALog {
   id: number;
@@ -39,7 +40,6 @@ class LogService {
     const whereParams: any[] = [];
 
     if (userId) {
-      // 需要关联 conversations 表获取 user_id
       whereClause += ' AND c.user_id = ?';
       whereParams.push(userId);
     }
@@ -60,25 +60,36 @@ class LogService {
     }
 
     // 查询总数
-    const countStmt = db.prepare(`
-      SELECT COUNT(*) as total FROM qa_logs l
-      LEFT JOIN conversations c ON l.conversation_id = c.id
-      ${whereClause}
-    `);
-    const { total } = countStmt.get(...whereParams) as { total: number };
+    const total = await new Promise<number>((resolve, reject) => {
+      db.get(
+        `SELECT COUNT(*) as total FROM qa_logs l
+         LEFT JOIN conversations c ON l.conversation_id = c.id
+         ${whereClause}`,
+        whereParams,
+        (err, row: any) => {
+          if (err) reject(err);
+          else resolve(row?.total || 0);
+        }
+      );
+    });
 
     // 查询日志
     const offset = (page - 1) * limit;
-    const stmt = db.prepare(`
-      SELECT l.*, c.user_id, c.session_id
-      FROM qa_logs l
-      LEFT JOIN conversations c ON l.conversation_id = c.id
-      ${whereClause}
-      ORDER BY l.created_at DESC
-      LIMIT ? OFFSET ?
-    `);
-
-    const logs = stmt.all(...whereParams, limit, offset) as QALog[];
+    const logs = await new Promise<QALog[]>((resolve, reject) => {
+      db.all(
+        `SELECT l.*, c.user_id, c.session_id
+         FROM qa_logs l
+         LEFT JOIN conversations c ON l.conversation_id = c.id
+         ${whereClause}
+         ORDER BY l.created_at DESC
+         LIMIT ? OFFSET ?`,
+        [...whereParams, limit, offset],
+        (err, rows) => {
+          if (err) reject(err);
+          else resolve(rows as QALog[]);
+        }
+      );
+    });
 
     return { logs, total };
   }

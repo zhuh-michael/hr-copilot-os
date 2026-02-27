@@ -5,6 +5,7 @@
  */
 
 import db from '../models/database';
+import sqlite3 from 'sqlite3';
 import fs from 'fs';
 import path from 'path';
 
@@ -47,18 +48,19 @@ class KnowledgeService {
     fs.writeFileSync(filePath, file.buffer);
 
     // 2. 插入数据库
-    const stmt = db.prepare(`
-      INSERT INTO knowledge_docs (title, category, file_path, version, status, chunk_count)
-      VALUES (?, ?, ?, '1.0', 1, 0)
-    `);
-
-    const result = stmt.run(title, category, filePath);
-
-    // 3. 解析文档并分块（TODO：实现 PDF 解析）
-    // const chunks = await this.chunkDocument(filePath);
-    // await this.saveChunks(result.lastInsertRowid as number, chunks);
-
-    return this.getById(result.lastInsertRowid as number);
+    return new Promise((resolve, reject) => {
+      db.run(
+        `INSERT INTO knowledge_docs (title, category, file_path, version, status, chunk_count)
+         VALUES (?, ?, ?, '1.0', 1, 0)`,
+        [title, category, filePath],
+        function(err) {
+          if (err) reject(err);
+          else resolve(this.lastID);
+        }
+      );
+    }).then(async (id) => {
+      return await this.getById(id as number);
+    });
   }
 
   /**
@@ -80,16 +82,24 @@ class KnowledgeService {
 
     sql += ' ORDER BY created_at DESC';
 
-    const stmt = db.prepare(sql);
-    return stmt.all(...params) as KnowledgeDocument[];
+    return new Promise((resolve, reject) => {
+      db.all(sql, params, (err, rows) => {
+        if (err) reject(err);
+        else resolve(rows as KnowledgeDocument[]);
+      });
+    });
   }
 
   /**
    * 获取文档详情
    */
   async getById(id: number): Promise<KnowledgeDocument> {
-    const stmt = db.prepare('SELECT * FROM knowledge_docs WHERE id = ?');
-    return stmt.get(id) as KnowledgeDocument;
+    return new Promise((resolve, reject) => {
+      db.get('SELECT * FROM knowledge_docs WHERE id = ?', [id], (err, row) => {
+        if (err) reject(err);
+        else resolve(row as KnowledgeDocument);
+      });
+    });
   }
 
   /**
