@@ -36,12 +36,11 @@ export function initDatabase(): void {
     db.exec(`
       CREATE TABLE IF NOT EXISTS conversations (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL,
+        user_id INTEGER,
         session_id VARCHAR(100) UNIQUE NOT NULL,
         status VARCHAR(50) DEFAULT 'ACTIVE',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(id)
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
 
@@ -49,15 +48,14 @@ export function initDatabase(): void {
     db.exec(`
       CREATE TABLE IF NOT EXISTS qa_logs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        conversation_id INTEGER NOT NULL,
+        conversation_id INTEGER,
         question TEXT NOT NULL,
         answer TEXT,
         intent VARCHAR(100),
         confidence REAL,
         feedback INTEGER,
         sources TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (conversation_id) REFERENCES conversations(id)
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
 
@@ -80,14 +78,13 @@ export function initDatabase(): void {
     db.exec(`
       CREATE TABLE IF NOT EXISTS document_chunks (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        document_id INTEGER NOT NULL,
+        document_id INTEGER,
         content TEXT NOT NULL,
         chunk_index INTEGER NOT NULL,
         page_number INTEGER,
         section VARCHAR(200),
         embedding BLOB,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (document_id) REFERENCES knowledge_docs(id)
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
 

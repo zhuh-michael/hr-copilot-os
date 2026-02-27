@@ -28,7 +28,7 @@ router.post('/', async (req: Request, res: Response) => {
     const result = await qaService.ask({
       id: uuidv4(),
       userId: userId || 'anonymous',
-      sessionId,
+      sessionId: sessionId || uuidv4(),
       content: message,
       createdAt: new Date()
     });

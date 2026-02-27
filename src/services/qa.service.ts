@@ -116,12 +116,14 @@ class QAService {
    * 保存问答日志
    */
   private async saveLog(question: Question, result: QAResult): Promise<void> {
+    const conversationId = await this.ensureConversation(question);
+
     return new Promise((resolve, reject) => {
       db.run(
         `INSERT INTO qa_logs (conversation_id, question, answer, intent, confidence, sources, created_at)
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [
-          question.sessionId,
+          conversationId,
           question.content,
           result.answer,
           result.intent,
@@ -134,6 +136,37 @@ class QAService {
           else {
             console.log('✅ 问答日志已保存');
             resolve();
+          }
+        }
+      );
+    });
+  }
+
+  /**
+   * 确保会话存在，返回会话 ID
+   */
+  private async ensureConversation(question: Question): Promise<number> {
+    return new Promise((resolve, reject) => {
+      db.get(
+        'SELECT id FROM conversations WHERE session_id = ?',
+        [question.sessionId],
+        (err, row: any) => {
+          if (err) reject(err);
+          else if (row) {
+            resolve(row.id);
+          } else {
+            // 会话不存在，创建之
+            db.run(
+              'INSERT INTO conversations (user_id, session_id, status) VALUES (?, ?, ?)',
+              [question.userId, question.sessionId, 'ACTIVE'],
+              function(err) {
+                if (err) reject(err);
+                else {
+                  console.log('✅ 会话已创建:', question.sessionId);
+                  resolve(this.lastID as number);
+                }
+              }
+            );
           }
         }
       );
