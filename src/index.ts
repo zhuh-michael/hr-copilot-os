@@ -8,6 +8,8 @@
 import express, { Application, Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { initDatabase } from './models/database';
+import routes from './routes';
 
 // 加载环境变量
 dotenv.config();
@@ -20,6 +22,12 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// 初始化数据库
+initDatabase();
+
+// 注册 API 路由
+app.use('/api', routes);
 
 // 健康检查接口
 app.get('/api/health', (req: Request, res: Response) => {
@@ -38,12 +46,12 @@ app.get('/', (req: Request, res: Response) => {
     version: '1.0.0',
     description: '智能 HR 问答机器人',
     endpoints: {
-      health: '/api/health',
-      chat: '/api/chat',
-      feedback: '/api/chat/feedback',
-      faq: '/api/faq',
-      logs: '/api/logs',
-      knowledge: '/api/knowledge'
+      health: 'GET /api/health',
+      chat: 'POST /api/chat',
+      feedback: 'POST /api/chat/feedback',
+      transfer: 'POST /api/chat/transfer',
+      knowledge: 'GET/POST /api/knowledge',
+      logs: 'GET /api/logs'
     }
   });
 });
